@@ -1,6 +1,5 @@
 require "faker"
-require "lib/crm_highrise_importer/highrise"
-include Highrise
+include FatFreeCRM::Highrise
 
 ADDRESSES = [ :addresses, :email_addresses, :instant_messengers, :twitter_accounts, :web_addresses ]
 

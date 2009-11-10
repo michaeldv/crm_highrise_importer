@@ -1,5 +1,5 @@
 require File.dirname(__FILE__) + "/../../../../spec/spec_helper"
-require "factory_girl"
+require "lib/crm_highrise_importer"
 require "spec/factories"
 require "spec/backends"
   
