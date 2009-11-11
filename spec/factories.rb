@@ -1,7 +1,7 @@
 require "faker"
 include FatFreeCRM::Highrise
 
-ADDRESSES = [ :addresses, :email_addresses, :instant_messengers, :twitter_accounts, :web_addresses ]
+ADDRESSES = [ :addresses, :email_addresses, :phone_numbers, :instant_messengers, :twitter_accounts, :web_addresses ]
 
 Factory.sequence :username do |x|
   Faker::Internet.user_name + x.to_s
@@ -13,6 +13,10 @@ end
 
 Factory.sequence :location do |x|
   %w(Work Home Other).rand
+end
+
+Factory.sequence :phone_location do |x|
+  %w(Work Mobile Fax Other).rand
 end
 
 Factory.sequence :protocol do |x|
@@ -29,7 +33,7 @@ end
 
 ADDRESSES.each do |addr|                                                                  #
   Factory.sequence addr do |x| # Use homegrown version of singularize.                    # Factory.sequence :addresses do |x|
-    rand(4).times.inject([]) { |arr,| arr << Factory(addr.to_s.sub(/e*s$/, "").to_sym) }  #   rand(4).times.inject([]) { |arr,| arr << Factory(:address) }
+    rand(5).times.inject([]) { |arr,| arr << Factory(addr.to_s.sub(/e*s$/, "").to_sym) }  #   rand(5).times.inject([]) { |arr,| arr << Factory(:address) }
   end                                                                                     # end
 end                                                                                       #
 
@@ -164,6 +168,12 @@ end
 Factory.define :email_address do |a|
   a.address             { Faker::Internet.email }
   a.location            { Factory.next(:location) }
+end
+
+#------------------------------------------------------------------------------
+Factory.define :phone_number do |a|
+  a.number              { Faker::PhoneNumber.phone_number }
+  a.location            { Factory.next(:phone_location) }
 end
 
 #------------------------------------------------------------------------------
