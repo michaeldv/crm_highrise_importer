@@ -8,9 +8,9 @@ end
 module Fake
   class Backend
 
-    def self.build(entities, number_of_records = 3)
+    def self.build(entity, number_of_records = 3)
       backend = self.new
-      backend.send(entities, number_of_records)
+      backend.send(entity, number_of_records)
     end
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.
@@ -32,6 +32,7 @@ module Fake
   end
 end
 
-def Backend(entities, number_of_records = 3)
-  Fake::Backend.build(entities, number_of_records)
+def Backend(entity, number_of_records = 3)
+  Fake::Backend.build(entity, number_of_records)
+  Fake::Backend.build(entity.to_s.pluralize.to_sym, number_of_records)
 end
