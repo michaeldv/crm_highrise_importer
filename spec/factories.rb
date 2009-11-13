@@ -19,6 +19,10 @@ Factory.sequence :phone_location do |x|
   %w(Work Mobile Fax Other).rand
 end
 
+Factory.sequence :website_location do |x|
+  %w(Work Personal Other).rand
+end
+
 Factory.sequence :protocol do |x|
   %w(AIM MSN ICQ Jabber Yahoo Skype QQ Sametime Gadu-Gadu Google\ Talk Other).rand
 end
@@ -192,5 +196,5 @@ end
 #------------------------------------------------------------------------------
 Factory.define :web_address do |a|
   a.url                 { Factory.next(:website) }
-  a.location            { Factory.next(:location) }
+  a.location            { Factory.next(:website_location) }
 end
