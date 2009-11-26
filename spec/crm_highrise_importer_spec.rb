@@ -39,7 +39,7 @@ describe "Importing data from Highrise to Fat Free CRM" do
 
   describe "Importing" do
     before(:each) do
-      [ :person, :company, :task ].each do |entity|
+      [ :person, :company, :task, :task_category ].each do |entity|
         Backend(entity)
       end
     end
@@ -63,8 +63,9 @@ describe "Importing data from Highrise to Fat Free CRM" do
     end
   
     it "imports tasks" do
+      @categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
       @tasks = FatFreeCRM::Highrise::Task.find(:all)
-      FatFreeCRM::Highrise::Import.tasks(@tasks)
+      FatFreeCRM::Highrise::Import.tasks(@tasks, @categories)
       @tasks.each do |task|
         @task = Task.find_by_name(task.body)
         @task.should_not == nil

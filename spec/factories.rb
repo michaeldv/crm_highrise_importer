@@ -3,6 +3,10 @@ include FatFreeCRM::Highrise
 
 ADDRESSES = [ :addresses, :email_addresses, :phone_numbers, :instant_messengers, :twitter_accounts, :web_addresses ]
 
+Factory.sequence :id do |x|
+  rand(9999)
+end
+
 Factory.sequence :username do |x|
   Faker::Internet.user_name + x.to_s
 end
@@ -50,10 +54,10 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :person do |a|
-  a.author_id           rand(999)
-  a.owner_id            rand(999)
-  a.group_id            rand(999)
-  a.company_id          rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
+  a.group_id            { Factory.next(:id) }
+  a.company_id          { Factory.next(:id) }
   a.background          { Faker::Lorem::paragraph }
   a.first_name          { Faker::Name.first_name }
   a.last_name           { Faker::Name.last_name }
@@ -66,9 +70,9 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :company do |a|
-  a.author_id           rand(999)
-  a.owner_id            rand(999)
-  a.group_id            rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
+  a.group_id            { Factory.next(:id) }
   a.name                { Faker::Company.name }
   a.background          { Faker::Lorem::paragraph }
   a.updated_at          { Factory.next(:time) }
@@ -78,19 +82,19 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :deal do |a|
-  a.account_id          rand(999)
-  a.author_id           rand(999)
-  a.category_id         rand(999)
-  a.owner_id            rand(999)
-  a.group_id            rand(999)
-  a.party_id            rand(999)
-  a.reponsible_party_id rand(999)
+  a.account_id          { Factory.next(:id) }
+  a.author_id           { Factory.next(:id) }
+  a.category_id         { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
+  a.group_id            { Factory.next(:id) }
+  a.party_id            { Factory.next(:id) }
+  a.reponsible_party_id { Factory.next(:id) }
   a.name                { Faker::Lorem.sentence }
   a.background          { Faker::Lorem::paragraph }
   a.status              { Faker::Lorem.sentence }
   a.currency            { Faker::Lorem.sentence }
-  a.duration            rand(999)
-  a.price               rand(999)
+  a.duration            { Factory.next(:id) }
+  a.price               { Factory.next(:id) }
   a.price_type          { Faker::Lorem.sentence }
   a.visible_to          "Everyone"
   a.status_changed_on   { Factory.next(:date) }
@@ -100,10 +104,10 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :task, :class => FatFreeCRM::Highrise::Task do |a|
-  a.author_id           rand(999)
-  a.owner_id            rand(999)
-  a.recording_id        rand(999)
-  a.category_id         rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
+  a.recording_id        { Factory.next(:id) }
+  a.category_id         { Factory.next(:id) }
   a.subject_id          nil
   a.subject_type        nil
   a.public              true
@@ -117,10 +121,10 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :note do |a|
-  a.author_id           rand(999)
-  a.group_id            rand(999)
-  a.kase_id             rand(999)
-  a.owner_id            rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.group_id            { Factory.next(:id) }
+  a.kase_id             { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
   a.subject_id          nil
   a.subject_type        nil
   a.body                { Faker::Lorem::paragraph }
@@ -133,15 +137,15 @@ end
 Factory.define :attachment, :class => FatFreeCRM::Highrise::Attachment do |a|
   a.url                 { Factory.next(:website) }
   a.name                { Faker::Lorem.sentence }
-  a.size                rand(999)
+  a.size                { Factory.next(:id) }
 end
 
 #------------------------------------------------------------------------------
 Factory.define :email, :class => FatFreeCRM::Highrise::Email do |a|
-  a.author_id           rand(999)
-  a.group_id            rand(999)
-  a.kase_id             rand(999)
-  a.owner_id            rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.group_id            { Factory.next(:id) }
+  a.kase_id             { Factory.next(:id) }
+  a.owner_id            { Factory.next(:id) }
   a.subject_id          nil
   a.subject_type        nil
   a.title               { Faker::Lorem.sentence }
@@ -153,8 +157,8 @@ end
 
 #------------------------------------------------------------------------------
 Factory.define :comment, :class => FatFreeCRM::Highrise::Comment do |a|
-  a.author_id           rand(999)
-  a.parent_id           rand(999)
+  a.author_id           { Factory.next(:id) }
+  a.parent_id           { Factory.next(:id) }
   a.body                { Faker::Lorem::paragraph }
   a.created_at          { Factory.next(:time) }
 end
@@ -199,3 +203,13 @@ Factory.define :web_address do |a|
   a.url                 { Factory.next(:website) }
   a.location            { Factory.next(:website_location) }
 end
+
+#------------------------------------------------------------------------------
+Factory.define :task_category do |a|
+  a.name                { Faker::Lorem::words(1).to_s }
+  a.account_id          { Factory.next(:id) }
+  a.elements_count      { Factory.next(:id) }
+  a.updated_at          { Factory.next(:time) }
+  a.created_at          { Factory.next(:time) }
+end
+

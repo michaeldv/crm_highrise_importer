@@ -15,7 +15,7 @@ module Fake
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.
     #------------------------------------------------------------------------------
-    [ :person, :company, :task ].each do |entity|                                                             #
+    [ :person, :company, :task, :task_category ].each do |entity|                                             #
       define_method entity do |n|                                                                             # def person
         data = Factory(entity)                                                                                #   data = Factory(:person)
         body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1") # Remove module names.               #   body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1")

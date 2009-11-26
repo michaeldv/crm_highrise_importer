@@ -13,8 +13,8 @@ module FatFreeCRM
       end
 
       #------------------------------------------------------------------------------
-      def self.tasks(tasks)
-        tasks.each { |t| import_task(t) }
+      def self.tasks(tasks, categories)
+        tasks.each { |t| import_task(t, categories) }
       end
 
 
@@ -68,20 +68,8 @@ module FatFreeCRM
         account
       end
 
-      # integer     :author_id
-      # integer     :recording_id
-      # integer     :category_id
-      # integer     :subject_id
-      # string      :subject_type
-      # boolean     :public
-      # string      :body
-      # string      :frame
-      # datetime    :due_at
-      # datetime    :alert_at
-      # datetime    :updated_at
-      # datetime    :created_at
       #------------------------------------------------------------------------------
-      def self.import_task(task)
+      def self.import_task(task, categories)
         ::Task.create(
           :user_id      => 1,
           :assigned_to  => 1,
@@ -90,7 +78,7 @@ module FatFreeCRM
           :asset_id     => nil,
           :asset_type   => nil,
           :priority     => nil,
-          :category     => nil,
+          :category     => category(task, categories),
           :bucket       => due_date(task),
           :due_at       => nil,
           :completed_at => task.done_at,
@@ -139,11 +127,15 @@ module FatFreeCRM
 
       #------------------------------------------------------------------------------
       def self.due_date(task)
-        if %w(today tomorrow this_week next_week later).include?(task.frame)
-          "due_#{task.frame}"
-        else
-          nil
-        end
+        return nil unless task.frame
+        "due_#{task.frame}" if %w(today tomorrow this_week next_week later).include?(task.frame)
+      end
+
+      #------------------------------------------------------------------------------
+      def self.category(task, categories)
+        return nil unless task.category_id
+        category = categories.detect { |c| c.id == task.category_id }
+        category.name if category
       end
 
     end

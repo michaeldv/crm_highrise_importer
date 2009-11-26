@@ -233,5 +233,16 @@ module FatFreeCRM
     class Comment < Base
     end
 
+    # ~~~~~~~~~~~ TaskCategory
+    # integer     :id
+    # string      :name
+    # integer     :account_id
+    # integer     :elements_count
+    # datetime    :updated_at
+    # datetime    :created_at
+    #------------------------------------------------------------------------------
+    class TaskCategory < Base
+    end
+
   end
 end
