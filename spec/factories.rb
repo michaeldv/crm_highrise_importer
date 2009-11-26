@@ -99,8 +99,9 @@ Factory.define :deal do |a|
 end
 
 #------------------------------------------------------------------------------
-Factory.define :task do |a|
+Factory.define :task, :class => FatFreeCRM::Highrise::Task do |a|
   a.author_id           rand(999)
+  a.owner_id            rand(999)
   a.recording_id        rand(999)
   a.category_id         rand(999)
   a.subject_id          nil
@@ -108,7 +109,7 @@ Factory.define :task do |a|
   a.public              true
   a.body                { Faker::Lorem::paragraph }
   a.frame               { Faker::Lorem.sentence }
-  a.due_at              { Factory.next(:time) }
+  a.done_at             { Factory.next(:time) }
   a.alert_at            { Factory.next(:time) }
   a.updated_at          { Factory.next(:time) }
   a.created_at          { Factory.next(:time) }
@@ -129,14 +130,14 @@ Factory.define :note do |a|
 end
 
 #------------------------------------------------------------------------------
-Factory.define :attachment do |a|
+Factory.define :attachment, :class => FatFreeCRM::Highrise::Attachment do |a|
   a.url                 { Factory.next(:website) }
   a.name                { Faker::Lorem.sentence }
   a.size                rand(999)
 end
 
 #------------------------------------------------------------------------------
-Factory.define :email do |a|
+Factory.define :email, :class => FatFreeCRM::Highrise::Email do |a|
   a.author_id           rand(999)
   a.group_id            rand(999)
   a.kase_id             rand(999)
@@ -151,7 +152,7 @@ Factory.define :email do |a|
 end
 
 #------------------------------------------------------------------------------
-Factory.define :comment do |a|
+Factory.define :comment, :class => FatFreeCRM::Highrise::Comment do |a|
   a.author_id           rand(999)
   a.parent_id           rand(999)
   a.body                { Faker::Lorem::paragraph }

@@ -90,6 +90,7 @@ module FatFreeCRM
     # ~~~~~~~~~~~ Task
     # integer     :id
     # integer     :author_id
+    # integer     :owner_id
     # integer     :recording_id
     # integer     :category_id
     # integer     :subject_id
@@ -97,7 +98,7 @@ module FatFreeCRM
     # boolean     :public
     # string      :body
     # string      :frame
-    # datetime    :due_at
+    # datetime    :done_at
     # datetime    :alert_at
     # datetime    :updated_at
     # datetime    :created_at

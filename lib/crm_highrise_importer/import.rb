@@ -12,32 +12,39 @@ module FatFreeCRM
         companies.each { |c| import_company(c) }
       end
 
+      #------------------------------------------------------------------------------
+      def self.tasks(tasks)
+        tasks.each { |t| import_task(t) }
+      end
+
 
       private
       #------------------------------------------------------------------------------
       def self.import_person(person)
         contact = Contact.create(
-          :first_name => person.first_name[0..64],
-          :last_name  => person.last_name[0..64],
-          :title      => person.title[0..64],
-          :access     => "Public",
-          :email      => extract(person.contact_data, :work_email),
-          :alt_email  => extract(person.contact_data, :home_email),
-          :phone      => extract(person.contact_data, :work_phone),
-          :mobile     => extract(person.contact_data, :mobile_phone),
-          :fax        => extract(person.contact_data, :fax_phone),
-          :blog       => extract(person.contact_data, :blog),
-          :linkedin   => extract(person.contact_data, :linkedin),
-          :facebook   => extract(person.contact_data, :facebook),
-          :twitter    => extract(person.contact_data, :twitter),
-          :address    => extract(person.contact_data, :address),
-          :created_at => person.created_at
+          :user_id     => 1,
+          :assigned_to => 1,
+          :first_name  => person.first_name[0..64],
+          :last_name   => person.last_name[0..64],
+          :title       => person.title[0..64],
+          :access      => "Public",
+          :email       => extract(person.contact_data, :work_email),
+          :alt_email   => extract(person.contact_data, :home_email),
+          :phone       => extract(person.contact_data, :work_phone),
+          :mobile      => extract(person.contact_data, :mobile_phone),
+          :fax         => extract(person.contact_data, :fax_phone),
+          :blog        => extract(person.contact_data, :blog),
+          :linkedin    => extract(person.contact_data, :linkedin),
+          :facebook    => extract(person.contact_data, :facebook),
+          :twitter     => extract(person.contact_data, :twitter),
+          :address     => extract(person.contact_data, :address),
+          :created_at  => person.created_at
         )
         if person.company
           account = self.import_company(person.company)
           AccountContact.create(:account => account, :contact => contact)
         end
-        puts contact.inspect
+        # puts contact.inspect
         # puts contact.account.inspect
         contact
       end
@@ -46,6 +53,8 @@ module FatFreeCRM
       def self.import_company(company)
         account = Account.find_by_name(company.name[0..64]) ||
         Account.create(
+          :user_id          => 1,
+          :assigned_to      => 1,
           :name             => company.name[0..64],
           :access           => "Public",
           :website          => extract(company.contact_data, :website),
@@ -55,8 +64,39 @@ module FatFreeCRM
           :billing_address  => extract(company.contact_data, :address),
           :shipping_address => extract(company.contact_data, :address)
         )
-        puts account.inspect
+        # puts account.inspect
         account
+      end
+
+      # integer     :author_id
+      # integer     :recording_id
+      # integer     :category_id
+      # integer     :subject_id
+      # string      :subject_type
+      # boolean     :public
+      # string      :body
+      # string      :frame
+      # datetime    :due_at
+      # datetime    :alert_at
+      # datetime    :updated_at
+      # datetime    :created_at
+      #------------------------------------------------------------------------------
+      def self.import_task(task)
+        ::Task.create(
+          :user_id      => 1,
+          :assigned_to  => 1,
+          :completed_by => nil,
+          :name         => task.body[0..255],
+          :asset_id     => nil,
+          :asset_type   => nil,
+          :priority     => nil,
+          :category     => nil,
+          :bucket       => due_date(task),
+          :due_at       => nil,
+          :completed_at => task.done_at,
+          :deleted_at   => nil,
+          :created_at   => task.created_at
+        )
       end
 
       private
@@ -96,6 +136,16 @@ module FatFreeCRM
           end
         end
       end
+
+      #------------------------------------------------------------------------------
+      def self.due_date(task)
+        if %w(today tomorrow this_week next_week later).include?(task.frame)
+          "due_#{task.frame}"
+        else
+          nil
+        end
+      end
+
     end
   end
 end
