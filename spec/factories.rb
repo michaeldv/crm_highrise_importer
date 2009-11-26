@@ -112,7 +112,7 @@ Factory.define :task, :class => FatFreeCRM::Highrise::Task do |a|
   a.subject_type        nil
   a.public              true
   a.body                { Faker::Lorem::paragraph }
-  a.frame               { Faker::Lorem.sentence }
+  a.frame               %w(today tomorrow this_week next_week later).rand
   a.done_at             { Factory.next(:time) }
   a.alert_at            { Factory.next(:time) }
   a.updated_at          { Factory.next(:time) }

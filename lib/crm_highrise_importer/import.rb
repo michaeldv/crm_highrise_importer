@@ -62,7 +62,8 @@ module FatFreeCRM
           :phone            => extract(company.contact_data, :work_phone),
           :fax              => extract(company.contact_data, :fax_phone),
           :billing_address  => extract(company.contact_data, :address),
-          :shipping_address => extract(company.contact_data, :address)
+          :shipping_address => extract(company.contact_data, :address),
+          :created_at       => company.created_at
         )
         # puts account.inspect
         account

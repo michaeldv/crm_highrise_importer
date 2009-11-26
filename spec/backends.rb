@@ -8,31 +8,34 @@ end
 module Fake
   class Backend
 
-    def self.build(entity, number_of_records = 3)
-      backend = self.new
-      backend.send(entity, number_of_records)
-    end
+    MODELS = [ :person, :company, :task, :task_category, :contact_data ]
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.
     #------------------------------------------------------------------------------
-    [ :person, :company, :task, :task_category ].each do |entity|                                             #
-      define_method entity do |n|                                                                             # def person
-        data = Factory(entity)                                                                                #   data = Factory(:person)
-        body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1") # Remove module names.               #   body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1")
-        FakeWeb.register_uri(:get, %r|http://highrise.crm/#{entity.to_s.pluralize}/\d+.xml|, :body => body)   #   FakeWeb.register_uri(:get, %r|http://highrise.crm/people/\d+.xml|, :body => body)
-      end                                                                                                     # end
+    MODELS.each do |model|                                                                                 #
+      define_method model do |n|                                                                           # def person
+        data = Factory(model)                                                                              #   data = Factory(:person)
+        body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1") # Remove module names.            #   body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1")
+        FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+.xml|, :body => body) #   FakeWeb.register_uri(:get, %r|http://highrise.crm/people/\d+.xml|, :body => body)
+      end                                                                                                  # end
     
-      define_method entity.to_s.pluralize do |n|                                                              # def people(n)
-        data = n.times.inject([]) { |arr,| arr << Factory(entity) }                                           #   data = n.times.inject([]) { |arr,| arr << Factory(:person) }
-        body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1") # Remove module names.               #   body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1")
-        FakeWeb.register_uri(:get, "http://highrise.crm/#{entity.to_s.pluralize}.xml", :body => body)         #   FakeWeb.register_uri(:get, "http://highrise.crm/people.xml", :body => body)
-      end                                                                                                     # end
-    end                                                                                                       #
+      define_method model.to_s.pluralize do |n|                                                            # def people(n)
+        data = n.times.inject([]) { |arr,| arr << Factory(model) }                                         #   data = n.times.inject([]) { |arr,| arr << Factory(:person) }
+        body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1") # Remove module names.            #   body = data.to_xml.gsub(%r|<(/*)fat-free-crm/highrise/|, "<\\1")
+        FakeWeb.register_uri(:get, "http://highrise.crm/#{model.to_s.pluralize}.xml", :body => body)       #   FakeWeb.register_uri(:get, "http://highrise.crm/people.xml", :body => body)
+      end                                                                                                  # end
+    end                                                                                                    #
+
+    # Stub models by invoking methods that register fake model URLs.
+    #------------------------------------------------------------------------------
+    def stub(*models)
+      number_of_records = 5
+      backends = (models == [ :all ] ? MODELS : models)
+      backends.each do |backend|
+        send(backend, number_of_records)
+        send(backend.to_s.pluralize.to_sym, number_of_records)
+      end
+    end
 
   end
-end
-
-def Backend(entity, number_of_records = 3)
-  Fake::Backend.build(entity, number_of_records)
-  Fake::Backend.build(entity.to_s.pluralize.to_sym, number_of_records)
 end
