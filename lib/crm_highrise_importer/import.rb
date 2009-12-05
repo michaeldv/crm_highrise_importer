@@ -2,21 +2,28 @@ module FatFreeCRM
   module Highrise
     class Import
 
+      cattr_accessor :categories
+
       #------------------------------------------------------------------------------
       def self.people(people)
-        people.each { |p| import_person(p) }
+        people.each do |p|
+          import_person(p)
+          import_related_tasks(p, "Contact")
+        end
       end
 
       #------------------------------------------------------------------------------
       def self.companies(companies)
-        companies.each { |c| import_company(c) }
+        companies.each do |c|
+          import_company(c)
+          import_related_tasks(c, "Account")
+        end
       end
 
       #------------------------------------------------------------------------------
-      def self.tasks(tasks, categories)
-        tasks.each { |t| import_task(t, categories) }
+      def self.tasks(tasks)
+        tasks.each { |t| import_task(t) unless t.subject_id }
       end
-
 
       private
       #------------------------------------------------------------------------------
@@ -69,23 +76,32 @@ module FatFreeCRM
         account
       end
 
+      # Import tasks related to a model with polymorphic subject_id/subject_type set.
       #------------------------------------------------------------------------------
-      def self.import_task(task, categories)
+      def self.import_task(task, related_id = nil, related_type = nil)
         ::Task.create(
           :user_id      => 1,
           :assigned_to  => 1,
           :completed_by => nil,
           :name         => task.body[0..255],
-          :asset_id     => nil,
-          :asset_type   => nil,
+          :asset_id     => related_id,
+          :asset_type   => related_type,
           :priority     => nil,
-          :category     => category(task, categories),
+          :category     => category(task),
           :bucket       => due_date(task),
           :due_at       => nil,
           :completed_at => task.done_at,
           :deleted_at   => nil,
           :created_at   => task.created_at
         )
+      end
+
+      # Import tasks related to a model with polymorphic subject_id/subject_type set.
+      #------------------------------------------------------------------------------
+      def self.import_related_tasks(model, klass)
+        model.tasks.each do |t|
+          import_task(t, model.id, klass)
+        end
       end
 
       private
@@ -133,8 +149,8 @@ module FatFreeCRM
       end
 
       #------------------------------------------------------------------------------
-      def self.category(task, categories)
-        return nil unless task.category_id
+      def self.category(task)
+        return nil if categories.nil? || task.category_id.nil?
         category = categories.detect { |c| c.id == task.category_id }
         category.name if category
       end

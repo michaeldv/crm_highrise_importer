@@ -7,6 +7,7 @@ describe "Importing data from Highrise to Fat Free CRM" do
     FatFreeCRM::Highrise::Base.site = "http://highrise.crm"
     @backend = Fake::Backend.new
     @backend.stub(:all)
+    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
   end
   
   it "imports people as contacts" do
@@ -29,16 +30,51 @@ describe "Importing data from Highrise to Fat Free CRM" do
       @imported.created_at.should == company.created_at
     end
   end
-    
-  it "imports tasks as tasks" do
-    @categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
+
+  it "imports related tasks for contacts" do
+    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
+    @people = [ Person.find(:first) ]
+    @tasks = [
+      Factory(:task, :subject_id => @people.first.id, :subject_type => "Person"),
+      Factory(:task, :subject_id => @people.first.id, :subject_type => "Person")
+    ]
+    FatFreeCRM::Highrise::Import.people(@people)
+    @tasks.each do |task|
+      @imported = Task.find_by_name(task.body)
+      @imported.should_not == nil
+      @imported.asset_id.should == @people.first.id
+      @imported.asset_type.should == "Contact"
+      @imported.bucket.should == "due_#{task.frame}"
+      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
+    end
+  end
+
+  it "imports related tasks for companies" do
+    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
+    @companies = [ Company.find(:first) ]
+    @tasks = [
+      Factory(:task, :subject_id => @companies.first.id, :subject_type => "Company"),
+      Factory(:task, :subject_id => @companies.first.id, :subject_type => "Company")
+    ]
+    FatFreeCRM::Highrise::Import.companies(@companies)
+    @tasks.each do |task|
+      @imported = Task.find_by_name(task.body)
+      @imported.should_not == nil
+      @imported.asset_id.should == @companies.first.id
+      @imported.asset_type.should == "Account"
+      @imported.bucket.should == "due_#{task.frame}"
+      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
+    end
+  end
+
+  it "imports unrelated tasks" do
     @tasks = FatFreeCRM::Highrise::Task.find(:all)
-    FatFreeCRM::Highrise::Import.tasks(@tasks, @categories)
+    FatFreeCRM::Highrise::Import.tasks(@tasks)
     @tasks.each do |task|
       @imported = Task.find_by_name(task.body)
       @imported.should_not == nil
       @imported.bucket.should == "due_#{task.frame}"
-      @imported.created_at.should == task.created_at
+      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
     end
   end
 
