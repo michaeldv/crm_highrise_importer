@@ -2,157 +2,171 @@ module FatFreeCRM
   module Highrise
     class Import
 
-      cattr_accessor :categories
+      class << self
+        attr_accessor :categories
 
-      #------------------------------------------------------------------------------
-      def self.people(people)
-        people.each do |p|
-          import_person(p)
-          import_related_tasks(p, "Contact")
+        #------------------------------------------------------------------------------
+        def users
         end
-      end
 
-      #------------------------------------------------------------------------------
-      def self.companies(companies)
-        companies.each do |c|
-          import_company(c)
-          import_related_tasks(c, "Account")
-        end
-      end
-
-      #------------------------------------------------------------------------------
-      def self.tasks(tasks)
-        tasks.each { |t| import_task(t) unless t.subject_id }
-      end
-
-      private
-      #------------------------------------------------------------------------------
-      def self.import_person(person)
-        contact = Contact.create(
-          :user_id     => 1,
-          :assigned_to => 1,
-          :first_name  => person.first_name[0..64],
-          :last_name   => person.last_name[0..64],
-          :title       => person.title[0..64],
-          :access      => "Public",
-          :email       => extract(person.contact_data, :work_email),
-          :alt_email   => extract(person.contact_data, :home_email),
-          :phone       => extract(person.contact_data, :work_phone),
-          :mobile      => extract(person.contact_data, :mobile_phone),
-          :fax         => extract(person.contact_data, :fax_phone),
-          :blog        => extract(person.contact_data, :blog),
-          :linkedin    => extract(person.contact_data, :linkedin),
-          :facebook    => extract(person.contact_data, :facebook),
-          :twitter     => extract(person.contact_data, :twitter),
-          :address     => extract(person.contact_data, :address),
-          :created_at  => person.created_at
-        )
-        if person.company
-          account = self.import_company(person.company)
-          AccountContact.create(:account => account, :contact => contact)
-        end
-        # puts contact.inspect
-        # puts contact.account.inspect
-        contact
-      end
-
-      #------------------------------------------------------------------------------
-      def self.import_company(company)
-        account = Account.find_by_name(company.name[0..64]) ||
-        Account.create(
-          :user_id          => 1,
-          :assigned_to      => 1,
-          :name             => company.name[0..64],
-          :access           => "Public",
-          :website          => extract(company.contact_data, :website),
-          :toll_free_phone  => extract(company.contact_data, :tall_free_phone),
-          :phone            => extract(company.contact_data, :work_phone),
-          :fax              => extract(company.contact_data, :fax_phone),
-          :billing_address  => extract(company.contact_data, :address),
-          :shipping_address => extract(company.contact_data, :address),
-          :created_at       => company.created_at
-        )
-        # puts account.inspect
-        account
-      end
-
-      # Import tasks related to a model with polymorphic subject_id/subject_type set.
-      #------------------------------------------------------------------------------
-      def self.import_task(task, related_id = nil, related_type = nil)
-        ::Task.create(
-          :user_id      => 1,
-          :assigned_to  => 1,
-          :completed_by => nil,
-          :name         => task.body[0..255],
-          :asset_id     => related_id,
-          :asset_type   => related_type,
-          :priority     => nil,
-          :category     => category(task),
-          :bucket       => due_date(task),
-          :due_at       => nil,
-          :completed_at => task.done_at,
-          :deleted_at   => nil,
-          :created_at   => task.created_at
-        )
-      end
-
-      # Import tasks related to a model with polymorphic subject_id/subject_type set.
-      #------------------------------------------------------------------------------
-      def self.import_related_tasks(model, klass)
-        model.tasks.each do |t|
-          import_task(t, model.id, klass)
-        end
-      end
-
-      private
-      #------------------------------------------------------------------------------
-      def self.extract(contact_data, field)
-        location = field.to_s.split("_").first.capitalize
-        case field
-        when :home_email, :work_email
-          email = contact_data.email_addresses.detect { |addr| addr.location == location }
-          email.address if email
-        when :work_phone, :mobile_phone, :fax_phone
-          phone = contact_data.phone_numbers.detect { |number| number.location == location }
-          phone.number if phone
-        when :tall_free_phone
-          phone = contact_data.phone_numbers.detect { |number| number.number =~ /^\s*.{0,2}(800|888)[^\d]+/ }
-          phone.number if phone
-        when :website
-          website = contact_data.web_addresses.detect { |site| site.location =~ /work|other/i }
-          website.url if website
-        when :blog
-          website = contact_data.web_addresses.detect { |site| site.location =~ /personal|other/i }
-          website.url if website
-        when :linkedin
-          website = contact_data.web_addresses.detect { |site| site.url =~ /linkedin/i }
-          website.url if website
-        when :facebook
-          website = contact_data.web_addresses.detect { |site| site.url =~ /facebook/i }
-          website.url if website
-        when :twitter
-          unless contact_data.twitter_accounts.blank?
-            "http://twitter.com/#{contact_data.twitter_accounts.first.username}"
-          end
-        when :address
-          unless contact_data.addresses.blank?
-            addr = contact_data.addresses.first
-            "#{addr.street}\n#{addr.city}, #{addr.state} #{addr.zip}\n#{addr.country}".strip
+        #------------------------------------------------------------------------------
+        def people
+          people = Person.find(:all)
+          people.each do |p|
+            import_person(p)
+            import_related_tasks(p, "Contact")
           end
         end
-      end
 
-      #------------------------------------------------------------------------------
-      def self.due_date(task)
-        return nil unless task.frame
-        "due_#{task.frame}" if %w(today tomorrow this_week next_week later).include?(task.frame)
-      end
+        #------------------------------------------------------------------------------
+        def companies
+          companies = Company.find(:all)
+          companies.each do |c|
+            import_company(c)
+            import_related_tasks(c, "Account")
+          end
+        end
 
-      #------------------------------------------------------------------------------
-      def self.category(task)
-        return nil if categories.nil? || task.category_id.nil?
-        category = categories.detect { |c| c.id == task.category_id }
-        category.name if category
+        #------------------------------------------------------------------------------
+        def categories
+          TaskCategory.find(:all)
+        end
+
+        #------------------------------------------------------------------------------
+        def tasks
+          tasks = FatFreeCRM::Highrise::Task.find(:all)
+          tasks.each { |t| import_task(t) unless t.subject_id }
+        end
+
+        private
+        #------------------------------------------------------------------------------
+        def import_person(person)
+          contact = Contact.create(
+            :user_id     => 1,
+            :assigned_to => 1,
+            :first_name  => person.first_name[0..64],
+            :last_name   => person.last_name[0..64],
+            :title       => person.title[0..64],
+            :access      => "Public",
+            :email       => extract(person.contact_data, :work_email),
+            :alt_email   => extract(person.contact_data, :home_email),
+            :phone       => extract(person.contact_data, :work_phone),
+            :mobile      => extract(person.contact_data, :mobile_phone),
+            :fax         => extract(person.contact_data, :fax_phone),
+            :blog        => extract(person.contact_data, :blog),
+            :linkedin    => extract(person.contact_data, :linkedin),
+            :facebook    => extract(person.contact_data, :facebook),
+            :twitter     => extract(person.contact_data, :twitter),
+            :address     => extract(person.contact_data, :address),
+            :created_at  => person.created_at
+          )
+          if person.company
+            account = import_company(person.company)
+            AccountContact.create(:account => account, :contact => contact)
+          end
+          # puts contact.inspect
+          # puts contact.account.inspect
+          contact
+        end
+
+        #------------------------------------------------------------------------------
+        def import_company(company)
+          account = Account.find_by_name(company.name[0..64]) ||
+          Account.create(
+            :user_id          => 1,
+            :assigned_to      => 1,
+            :name             => company.name[0..64],
+            :access           => "Public",
+            :website          => extract(company.contact_data, :website),
+            :toll_free_phone  => extract(company.contact_data, :tall_free_phone),
+            :phone            => extract(company.contact_data, :work_phone),
+            :fax              => extract(company.contact_data, :fax_phone),
+            :billing_address  => extract(company.contact_data, :address),
+            :shipping_address => extract(company.contact_data, :address),
+            :created_at       => company.created_at
+          )
+          # puts account.inspect
+          account
+        end
+
+        # Import tasks related to a model with polymorphic subject_id/subject_type set.
+        #------------------------------------------------------------------------------
+        def import_task(task, related_id = nil, related_type = nil)
+          ::Task.create(
+            :user_id      => 1,
+            :assigned_to  => 1,
+            :completed_by => nil,
+            :name         => task.body[0..255],
+            :asset_id     => related_id,
+            :asset_type   => related_type,
+            :priority     => nil,
+            :category     => category(task),
+            :bucket       => due_date(task),
+            :due_at       => nil,
+            :completed_at => task.done_at,
+            :deleted_at   => nil,
+            :created_at   => task.created_at
+          )
+        end
+
+        # Import tasks related to a model with polymorphic subject_id/subject_type set.
+        #------------------------------------------------------------------------------
+        def import_related_tasks(model, klass)
+          model.tasks.each do |t|
+            import_task(t, model.id, klass)
+          end
+        end
+
+        private
+        #------------------------------------------------------------------------------
+        def extract(contact_data, field)
+          location = field.to_s.split("_").first.capitalize
+          case field
+          when :home_email, :work_email
+            email = contact_data.email_addresses.detect { |addr| addr.location == location }
+            email.address if email
+          when :work_phone, :mobile_phone, :fax_phone
+            phone = contact_data.phone_numbers.detect { |number| number.location == location }
+            phone.number if phone
+          when :tall_free_phone
+            phone = contact_data.phone_numbers.detect { |number| number.number =~ /^\s*.{0,2}(800|888)[^\d]+/ }
+            phone.number if phone
+          when :website
+            website = contact_data.web_addresses.detect { |site| site.location =~ /work|other/i }
+            website.url if website
+          when :blog
+            website = contact_data.web_addresses.detect { |site| site.location =~ /personal|other/i }
+            website.url if website
+          when :linkedin
+            website = contact_data.web_addresses.detect { |site| site.url =~ /linkedin/i }
+            website.url if website
+          when :facebook
+            website = contact_data.web_addresses.detect { |site| site.url =~ /facebook/i }
+            website.url if website
+          when :twitter
+            unless contact_data.twitter_accounts.blank?
+              "http://twitter.com/#{contact_data.twitter_accounts.first.username}"
+            end
+          when :address
+            unless contact_data.addresses.blank?
+              addr = contact_data.addresses.first
+              "#{addr.street}\n#{addr.city}, #{addr.state} #{addr.zip}\n#{addr.country}".strip
+            end
+          end
+        end
+
+        #------------------------------------------------------------------------------
+        def due_date(task)
+          return nil unless task.frame
+          "due_#{task.frame}" if %w(today tomorrow this_week next_week later).include?(task.frame)
+        end
+
+        #------------------------------------------------------------------------------
+        def category(task)
+          return nil if categories.nil? || task.category_id.nil?
+          category = categories.detect { |c| c.id == task.category_id }
+          category.name if category
+        end
       end
 
     end

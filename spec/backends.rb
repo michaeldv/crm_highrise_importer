@@ -8,7 +8,7 @@ end
 module Fake
   class Backend
 
-    MODELS = [ :person, :company, :task, :task_category, :contact_data ]
+    MODELS = [ :user, :person, :company, :task, :task_category, :contact_data ]
     PREFIX = %r|<(/*)fat-free-crm/highrise/|
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.

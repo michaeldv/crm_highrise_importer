@@ -7,12 +7,10 @@ describe "Importing data from Highrise to Fat Free CRM" do
     FatFreeCRM::Highrise::Base.site = "http://highrise.crm"
     @backend = Fake::Backend.new
     @backend.stub(:all)
-    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
   end
   
   it "imports people as contacts" do
-    @people = Person.find(:all)
-    FatFreeCRM::Highrise::Import.people(@people)
+    @people = Import.people
     @people.each do |person|
       @imported = Contact.find_by_first_name_and_last_name(person.first_name, person.last_name)
       @imported.should_not == nil
@@ -22,8 +20,7 @@ describe "Importing data from Highrise to Fat Free CRM" do
   end
   
   it "imports companies as accounts" do
-    @companies = Company.find(:all)
-    FatFreeCRM::Highrise::Import.companies(@companies)
+    @companies = Import.companies
     @companies.each do |company|
       @imported = Account.find_by_name(company.name)
       @imported.should_not == nil
@@ -32,13 +29,12 @@ describe "Importing data from Highrise to Fat Free CRM" do
   end
 
   it "imports related tasks for contacts" do
-    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
-    @people = [ Person.find(:first) ]
+    Import.categories
+    @people = Import.people
     @tasks = [
       Factory(:task, :subject_id => @people.first.id, :subject_type => "Person"),
       Factory(:task, :subject_id => @people.first.id, :subject_type => "Person")
     ]
-    FatFreeCRM::Highrise::Import.people(@people)
     @tasks.each do |task|
       @imported = Task.find_by_name(task.body)
       @imported.should_not == nil
@@ -50,13 +46,12 @@ describe "Importing data from Highrise to Fat Free CRM" do
   end
 
   it "imports related tasks for companies" do
-    FatFreeCRM::Highrise::Import.categories = FatFreeCRM::Highrise::TaskCategory.find(:all)
-    @companies = [ Company.find(:first) ]
+    Import.categories
+    @companies = Import.companies
     @tasks = [
       Factory(:task, :subject_id => @companies.first.id, :subject_type => "Company"),
       Factory(:task, :subject_id => @companies.first.id, :subject_type => "Company")
     ]
-    FatFreeCRM::Highrise::Import.companies(@companies)
     @tasks.each do |task|
       @imported = Task.find_by_name(task.body)
       @imported.should_not == nil
@@ -68,8 +63,7 @@ describe "Importing data from Highrise to Fat Free CRM" do
   end
 
   it "imports unrelated tasks" do
-    @tasks = FatFreeCRM::Highrise::Task.find(:all)
-    FatFreeCRM::Highrise::Import.tasks(@tasks)
+    @tasks = Import.tasks
     @tasks.each do |task|
       @imported = Task.find_by_name(task.body)
       @imported.should_not == nil

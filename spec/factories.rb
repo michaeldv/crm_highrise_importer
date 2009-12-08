@@ -101,8 +101,8 @@ Factory.define :deal do |a|
   a.price_type          Faker::Lorem.sentence
   a.visible_to          "Everyone"
   a.status_changed_on   Factory.next(:date)
-  a.updated_at          Factory.next(:time)
   a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
 end
 
 #------------------------------------------------------------------------------
@@ -119,8 +119,8 @@ Factory.define :task, :class => FatFreeCRM::Highrise::Task do |a|
   a.frame               %w(today tomorrow this_week next_week later).rand
   a.done_at             Factory.next(:time)
   a.alert_at            Factory.next(:time)
-  a.updated_at          Factory.next(:time)
   a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
 end
 
 #------------------------------------------------------------------------------
@@ -134,8 +134,8 @@ Factory.define :note do |a|
   a.subject_type        nil
   a.body                Faker::Lorem::paragraph
   a.visible_to          "Everyone"
-  a.updated_at          Factory.next(:time)
   a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
 end
 
 #------------------------------------------------------------------------------
@@ -158,8 +158,8 @@ Factory.define :email, :class => FatFreeCRM::Highrise::Email do |a|
   a.title               Faker::Lorem.sentence
   a.body                Faker::Lorem::paragraph
   a.visible_to          "Everyone"
-  a.updated_at          Factory.next(:time)
   a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
 end
 
 #------------------------------------------------------------------------------
@@ -224,7 +224,15 @@ Factory.define :task_category do |a|
   a.name                Faker::Lorem::words(1).first
   a.account_id          Factory.next(:id)
   a.elements_count      Factory.next(:id)
-  a.updated_at          Factory.next(:time)
   a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
 end
 
+#------------------------------------------------------------------------------
+Factory.define :users do |a|
+  a.add_attribute :id,  Factory.next(:id)
+  a.person_id           Factory.next(:id)
+  a.username            Factory.next(:username)
+  a.created_at          Factory.next(:time)
+  a.updated_at          Factory.next(:time)
+end
