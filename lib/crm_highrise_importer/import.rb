@@ -3,19 +3,36 @@ module FatFreeCRM
     class Import
 
       class << self
-        attr_accessor :users
+        attr_accessor :users, :fat_free_crm_users
         attr_accessor :categories
+        attr_accessor :admin
 
         PASSWORD = "p@ssword"
 
         #------------------------------------------------------------------------------
         def users
-          @@users ||= {}
+          @@users ||= []
+          @@fat_free_crm_users ||= []
           if @@users.empty?
             @@users = FatFreeCRM::Highrise::User.find(:all)
-            @@users.each { |u| import_user(u) }
+            @@users.each { |u| @@fat_free_crm_users << import_user(u) }
           end
           @@users
+        end
+
+        #------------------------------------------------------------------------------
+        def fat_free_crm_users
+          @@fat_free_crm_users
+        end
+
+        #------------------------------------------------------------------------------
+        def categories
+          @@categories ||= TaskCategory.find(:all)
+        end
+
+        #------------------------------------------------------------------------------
+        def admin
+          @@admin ||= ::User.first(:conditions => "admin = true")
         end
 
         #------------------------------------------------------------------------------
@@ -34,11 +51,6 @@ module FatFreeCRM
             account = import_company(c)
             import_related_tasks(c, account)
           end
-        end
-
-        #------------------------------------------------------------------------------
-        def categories
-          @@categories ||= TaskCategory.find(:all)
         end
 
         #------------------------------------------------------------------------------
@@ -67,13 +79,14 @@ module FatFreeCRM
               :created_at => user.created_at
               )
           end
+          fat_free_crm_user
         end
 
         #------------------------------------------------------------------------------
         def import_person(person)
           contact = Contact.create!(
-            :user_id     => 1,
-            :assigned_to => 1,
+            :user_id     => author(person),
+            :assigned_to => owner(person),
             :first_name  => person.first_name[0..63],
             :last_name   => person.last_name[0..63],
             :title       => person.title[0..63],
@@ -103,8 +116,8 @@ module FatFreeCRM
         def import_company(company)
           account = Account.find_by_name(company.name[0..63]) ||
           Account.create!(
-            :user_id          => 1,
-            :assigned_to      => 1,
+            :user_id          => author(company),
+            :assigned_to      => owner(company),
             :name             => company.name[0..63],
             :access           => "Public",
             :website          => extract(company.contact_data, :website),
@@ -123,8 +136,8 @@ module FatFreeCRM
         #------------------------------------------------------------------------------
         def import_task(task, related = nil)
           ::Task.create!(
-            :user_id      => 1,
-            :assigned_to  => 1,
+            :user_id      => author(task),
+            :assigned_to  => owner(task),
             :completed_by => nil,
             :name         => task.body[0..254],
             :asset_id     => related ? related.id : nil,
@@ -203,6 +216,20 @@ module FatFreeCRM
           users.detect { |u| u.person_id == person.id }
         end
 
+        #------------------------------------------------------------------------------
+        def author(model)
+          users.zip(fat_free_crm_users).each do |u, f|
+            return f.id if u.id == model.author_id
+          end
+          admin.id
+        end
+
+        def owner(model)
+          users.zip(fat_free_crm_users).each do |u, f|
+            return f.id if u.id == model.owner_id
+          end
+          nil
+        end
       end
 
     end
