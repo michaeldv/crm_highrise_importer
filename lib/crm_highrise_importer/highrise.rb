@@ -87,6 +87,15 @@ module FatFreeCRM
     class Deal < CoreObject
     end
   
+    # ~~~~~~~~~~~ User
+    # integer     :id
+    # integer     :person_id
+    # datetime    :updated_at
+    # datetime    :created_at
+    #------------------------------------------------------------------------------
+    class User < Base
+    end
+
     # ~~~~~~~~~~~ Task
     # integer     :id
     # integer     :author_id

@@ -3,18 +3,27 @@ module FatFreeCRM
     class Import
 
       class << self
+        attr_accessor :users
         attr_accessor :categories
+
+        PASSWORD = "p@ssword"
 
         #------------------------------------------------------------------------------
         def users
+          @@users ||= {}
+          if @@users.empty?
+            @@users = FatFreeCRM::Highrise::User.find(:all)
+            @@users.each { |u| import_user(u) }
+          end
+          @@users
         end
 
         #------------------------------------------------------------------------------
         def people
           people = Person.find(:all)
-          people.each do |p|
-            import_person(p)
-            import_related_tasks(p, "Contact")
+          people.select { |person| not is_user?(person) }.each do |p|
+            contact = import_person(p)
+            import_related_tasks(p, contact)
           end
         end
 
@@ -22,14 +31,14 @@ module FatFreeCRM
         def companies
           companies = Company.find(:all)
           companies.each do |c|
-            import_company(c)
-            import_related_tasks(c, "Account")
+            account = import_company(c)
+            import_related_tasks(c, account)
           end
         end
 
         #------------------------------------------------------------------------------
         def categories
-          TaskCategory.find(:all)
+          @@categories ||= TaskCategory.find(:all)
         end
 
         #------------------------------------------------------------------------------
@@ -40,13 +49,34 @@ module FatFreeCRM
 
         private
         #------------------------------------------------------------------------------
+        def import_user(user)
+          fat_free_crm_user = ::User.find_by_username(user.name)
+          unless fat_free_crm_user
+            person = Person.find(user.person_id)
+            email = extract(person.contact_data, :work_email) || extract(person.contact_data, :home_email) || "#{user.name}@example.com"
+            fat_free_crm_user = ::User.create!(
+              :username   => user.name,
+              :password   => PASSWORD,
+              :password_confirmation => PASSWORD,
+              :email      => email,
+              :first_name => person.first_name[0..63],
+              :last_name  => person.last_name[0..63],
+              :title      => person.title[0..63],
+              :phone      => extract(person.contact_data, :work_phone),
+              :mobile     => extract(person.contact_data, :mobile_phone),
+              :created_at => user.created_at
+              )
+          end
+        end
+
+        #------------------------------------------------------------------------------
         def import_person(person)
-          contact = Contact.create(
+          contact = Contact.create!(
             :user_id     => 1,
             :assigned_to => 1,
-            :first_name  => person.first_name[0..64],
-            :last_name   => person.last_name[0..64],
-            :title       => person.title[0..64],
+            :first_name  => person.first_name[0..63],
+            :last_name   => person.last_name[0..63],
+            :title       => person.title[0..63],
             :access      => "Public",
             :email       => extract(person.contact_data, :work_email),
             :alt_email   => extract(person.contact_data, :home_email),
@@ -62,7 +92,7 @@ module FatFreeCRM
           )
           if person.company
             account = import_company(person.company)
-            AccountContact.create(:account => account, :contact => contact)
+            AccountContact.create!(:account => account, :contact => contact)
           end
           # puts contact.inspect
           # puts contact.account.inspect
@@ -71,11 +101,11 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def import_company(company)
-          account = Account.find_by_name(company.name[0..64]) ||
-          Account.create(
+          account = Account.find_by_name(company.name[0..63]) ||
+          Account.create!(
             :user_id          => 1,
             :assigned_to      => 1,
-            :name             => company.name[0..64],
+            :name             => company.name[0..63],
             :access           => "Public",
             :website          => extract(company.contact_data, :website),
             :toll_free_phone  => extract(company.contact_data, :tall_free_phone),
@@ -91,14 +121,14 @@ module FatFreeCRM
 
         # Import tasks related to a model with polymorphic subject_id/subject_type set.
         #------------------------------------------------------------------------------
-        def import_task(task, related_id = nil, related_type = nil)
-          ::Task.create(
+        def import_task(task, related = nil)
+          ::Task.create!(
             :user_id      => 1,
             :assigned_to  => 1,
             :completed_by => nil,
-            :name         => task.body[0..255],
-            :asset_id     => related_id,
-            :asset_type   => related_type,
+            :name         => task.body[0..254],
+            :asset_id     => related ? related.id : nil,
+            :asset_type   => related ? related.class.to_s : nil,
             :priority     => nil,
             :category     => category(task),
             :bucket       => due_date(task),
@@ -111,9 +141,9 @@ module FatFreeCRM
 
         # Import tasks related to a model with polymorphic subject_id/subject_type set.
         #------------------------------------------------------------------------------
-        def import_related_tasks(model, klass)
+        def import_related_tasks(model, related)
           model.tasks.each do |t|
-            import_task(t, model.id, klass)
+            import_task(t, related)
           end
         end
 
@@ -167,6 +197,12 @@ module FatFreeCRM
           category = categories.detect { |c| c.id == task.category_id }
           category.name if category
         end
+
+        #------------------------------------------------------------------------------
+        def is_user?(person)
+          users.detect { |u| u.person_id == person.id }
+        end
+
       end
 
     end
