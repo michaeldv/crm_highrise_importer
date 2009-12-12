@@ -7,7 +7,7 @@ module FatFreeCRM
         attr_accessor :categories
         attr_accessor :admin
 
-        PASSWORD = "p@ssword"
+        PASSWORD = "p@ssword" # Default password for imported users.
 
         #------------------------------------------------------------------------------
         def users
@@ -67,13 +67,25 @@ module FatFreeCRM
         end
 
         #------------------------------------------------------------------------------
-        def unrelated_tasks
+        def standalone_tasks
           before = FatFreeCRM::Highrise::Task.find(:all)
           before = before.select { |t| t.subject_id.nil? } # Select non-related tasks only.
           after = before.inject([]) do |arr, t|
             arr << import_task(t)
           end
           [ before, after ]
+        end
+
+        # Import notes for Companies (Accounts) or People (Contacts).
+        #------------------------------------------------------------------------------
+        def notes(exported, imported)
+          before, after = [], []
+          exported.zip(imported).each do |ex, im|
+            x, y = import_note(ex, im)
+            before << x
+            after  << y
+          end
+          [ before.flatten, after.flatten ]
         end
 
         private
@@ -170,14 +182,33 @@ module FatFreeCRM
           )
         end
 
-        # Import tasks related to a model with polymorphic subject_id/subject_type set.
+        # Import a task related to a model with polymorphic subject_id/subject_type set.
         #------------------------------------------------------------------------------
         def import_related_task(model, related)
           tasks = model.tasks
-          imported_tasks = tasks.inject([]) do |arr, t|
-            arr << import_task(t, related)
+          imported_tasks = tasks.inject([]) do |arr, task|
+            arr << import_task(task, related)
           end
           [ tasks, imported_tasks ]
+        end
+
+        # Import a note related to a model with polymorphic subject_id/subject_type set.
+        #------------------------------------------------------------------------------
+        def import_note(model, related)
+          notes = model.notes
+          imported_notes = notes.inject([]) do |arr, note|
+            ::Comment.after_create.clear # Disable activity logging.
+            arr << ::Comment.create!(
+              :user_id          => author(note),
+              :commentable_id   => related.id,
+              :commentable_type => related.class.to_s,
+              :private          => false,
+              :title            => "",
+              :comment          => note.body[0..254],
+              :created_at       => note.created_at
+            )
+          end
+          [ notes, imported_notes ]
         end
 
         private

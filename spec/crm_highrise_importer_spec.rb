@@ -48,11 +48,12 @@ describe "Importing data from Highrise to Fat Free CRM" do
     end
   end
   
-  it "imports related tasks for contacts" do
+  it "imports related tasks for people (contacts)" do
     people, contacts = Import.people
     exported, imported = Import.related_tasks(people, contacts)
     exported.size.should == imported.size
     exported.zip(imported).each do |ex, im|
+      im.user_id.should_not == nil
       im.name.should == ex.body[0..254]
       im.asset_id.should_not == nil
       im.asset_type.should == "Contact"
@@ -61,11 +62,12 @@ describe "Importing data from Highrise to Fat Free CRM" do
     end
   end
   
-  it "imports related tasks for companies" do
+  it "imports related tasks for companies (accounts)" do
     companies, accounts = Import.companies
     exported, imported = Import.related_tasks(companies, accounts)
     exported.size.should == imported.size
     exported.zip(imported).each do |ex, im|
+      im.user_id.should_not == nil
       im.name.should == ex.body[0..254]
       im.asset_id.should_not == nil
       im.asset_type.should == "Account"
@@ -73,15 +75,42 @@ describe "Importing data from Highrise to Fat Free CRM" do
       im.created_at.should == ex.created_at
     end
   end
-
-  it "imports unrelated tasks" do
-    exported, imported = Import.unrelated_tasks
+  
+  it "imports standalone tasks" do
+    exported, imported = Import.standalone_tasks
     exported.size.should == imported.size
     exported.zip(imported).each do |ex, im|
+      im.user_id.should_not == nil
       im.name.should == ex.body[0..254]
       im.asset_id.should == nil
       im.asset_type.should == nil
       im.bucket.should == "due_#{ex.frame}"
+      im.created_at.should == ex.created_at
+    end
+  end
+
+  it "imports notes for contacts" do
+    people, contacts = Import.people
+    exported, imported = Import.notes(people, contacts)
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+      im.user_id.should_not == nil
+      im.comment.should == ex.body[0..254]
+      im.commentable_id.should_not == nil
+      im.commentable_type.should == "Contact"
+      im.created_at.should == ex.created_at
+    end
+  end
+
+  it "imports notes for companies" do
+    companies, accounts = Import.companies
+    exported, imported = Import.notes(companies, accounts)
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+      im.user_id.should_not == nil
+      im.comment.should == ex.body[0..254]
+      im.commentable_id.should_not == nil
+      im.commentable_type.should == "Account"
       im.created_at.should == ex.created_at
     end
   end

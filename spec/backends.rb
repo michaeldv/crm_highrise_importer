@@ -8,7 +8,7 @@ end
 module Fake
   class Backend
 
-    MODELS = [ :user, :person, :company, :task, :task_category, :contact_data ]
+    MODELS = [ :user, :person, :company, :task, :note, :task_category, :contact_data ]
     PREFIX = %r|<(/*)fat-free-crm/highrise/|
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.
@@ -27,12 +27,14 @@ module Fake
         end.to_xml.gsub(PREFIX, "<\\1")
         FakeWeb.register_uri(:get, "http://highrise.crm/#{model.to_s.pluralize}.xml", :body => body)
 
-        # Stub related tasks.
+        # Stub related tasks and notes.
         if model == :person || model == :company
-          body = n.times.inject([]) do |arr,|
-            arr << Factory(:task)
-          end.to_xml.gsub(PREFIX, "<\\1")
-          FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+/tasks.xml|, :body => body)
+          [ :task, :note ].each do |related|
+            body = n.times.inject([]) do |arr,|
+              arr << Factory(related)
+            end.to_xml.gsub(PREFIX, "<\\1")
+            FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+/#{related.to_s.pluralize}.xml|, :body => body)
+          end
         end
       end
 
