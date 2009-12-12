@@ -9,31 +9,26 @@ module Fake
   class Backend
 
     MODELS = [ :user, :person, :company, :task, :note, :task_category, :contact_data ]
-    PREFIX = %r|<(/*)fat-free-crm/highrise/|
 
     # Register URIs with FakeWeb and make it respond with the Factory built objects.
     #------------------------------------------------------------------------------
     MODELS.each do |model|
       define_method model do |n|
         options = n.times.inject([]) do |arr,|
-          arr << { :body => Factory(model).to_xml.gsub(PREFIX, "<\\1") }
+          arr << { :body => Factory(model).to_xml(:root => model.to_s) }
         end
         FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+.xml|, options)
       end
     
       define_method model.to_s.pluralize do |n|
-        body = n.times.inject([]) do |arr,|
-          arr << Factory(model)
-        end.to_xml.gsub(PREFIX, "<\\1")
-        FakeWeb.register_uri(:get, "http://highrise.crm/#{model.to_s.pluralize}.xml", :body => body)
+        body = n.times.inject([]) { |arr,| arr << Factory(model) }
+        FakeWeb.register_uri(:get, "http://highrise.crm/#{model.to_s.pluralize}.xml", :body => body.to_xml(:root => model.to_s))
 
         # Stub related tasks and notes.
         if model == :person || model == :company
           [ :task, :note ].each do |related|
-            body = n.times.inject([]) do |arr,|
-              arr << Factory(related)
-            end.to_xml.gsub(PREFIX, "<\\1")
-            FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+/#{related.to_s.pluralize}.xml|, :body => body)
+            body = n.times.inject([]) { |arr,| arr << Factory(related) }
+            FakeWeb.register_uri(:get, %r|http://highrise.crm/#{model.to_s.pluralize}/\d+/#{related.to_s.pluralize}.xml|, :body => body.to_xml(:root => related.to_s))
           end
         end
       end
