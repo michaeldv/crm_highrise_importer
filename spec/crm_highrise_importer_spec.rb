@@ -7,76 +7,82 @@ describe "Importing data from Highrise to Fat Free CRM" do
     FatFreeCRM::Highrise::Base.site = "http://highrise.crm"
     @backend = Fake::Backend.new
     @backend.stub(:all)
-    @users = Import.users
+    Import.users
     Import.categories
   end
 
   it "imports users" do
-    @users.each do |user|
-      @imported = ::User.find_by_username(user.name)
-      @imported.should_not == nil
-      @imported.username.should == user.name
-      @imported.password_hash.should_not == nil
-      @imported.created_at.should == user.created_at
+    exported, imported = Import.users, Import.fat_free_crm_users
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+       im.username.should == ex.name
+       im.email.should =~ /^.+?@.+$/
+       im.created_at.should == ex.created_at
+       im.password_hash.should_not == nil
     end
   end
   
   it "imports people as contacts" do
-    @people = Import.people
-    @people.each do |person|
-      @imported = Contact.find_by_first_name_and_last_name(person.first_name, person.last_name)
-      @imported.should_not == nil
-      @imported.title.should == person.title[0..63]
-      @imported.created_at.should == person.created_at
+    people, contacts = Import.people
+    people.size.should == contacts.size
+    people.zip(contacts).each do |person, contact|
+      contact.user_id.should_not == nil
+      contact.assigned_to.should == nil if person.owner_id.nil?
+      contact.assigned_to.should_not == nil unless person.owner_id.nil?
+      contact.first_name.should == person.first_name[0..63]
+      contact.last_name.should == person.last_name[0..63]
+      contact.title.should == person.title[0..63]
+      contact.created_at.should == person.created_at
     end
   end
   
   it "imports companies as accounts" do
-    @companies = Import.companies
-    @companies.each do |company|
-      @imported = Account.find_by_name(company.name)
-      @imported.should_not == nil
-      @imported.created_at.should == company.created_at
+    companies, accounts = Import.companies
+    companies.size.should == accounts.size
+    companies.zip(accounts).each do |company, account|
+      account.user_id.should_not == nil
+      account.assigned_to.should == nil if company.owner_id.nil?
+      account.assigned_to.should_not == nil unless company.owner_id.nil?
+      account.name.should == company.name[0..63]
+      account.created_at.should == company.created_at
     end
   end
   
   it "imports related tasks for contacts" do
-    @people = Import.people
-    @tasks = @people.map(&:tasks).flatten
-  
-    @tasks.each do |task|
-      @imported = Task.find_by_name(task.body[0..254])
-      @imported.should_not == nil
-      @imported.asset_id.should_not == nil
-      @imported.asset_type.should == "Contact"
-      @imported.bucket.should == "due_#{task.frame}"
-      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
+    people, contacts = Import.people
+    exported, imported = Import.related_tasks(people, contacts)
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+      im.name.should == ex.body[0..254]
+      im.asset_id.should_not == nil
+      im.asset_type.should == "Contact"
+      im.bucket.should == "due_#{ex.frame}"
+      im.created_at.should == ex.created_at
     end
   end
   
   it "imports related tasks for companies" do
-    @companies = Import.companies
-    @tasks = @companies.map(&:tasks).flatten
-  
-    @tasks.each do |task|
-      @imported = Task.find_by_name(task.body[0..254])
-      @imported.should_not == nil
-      @imported.asset_id.should_not == nil
-      @imported.asset_type.should == "Account"
-      @imported.bucket.should == "due_#{task.frame}"
-      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
+    companies, accounts = Import.companies
+    exported, imported = Import.related_tasks(companies, accounts)
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+      im.name.should == ex.body[0..254]
+      im.asset_id.should_not == nil
+      im.asset_type.should == "Account"
+      im.bucket.should == "due_#{ex.frame}"
+      im.created_at.should == ex.created_at
     end
   end
-  
+
   it "imports unrelated tasks" do
-    @tasks = Import.tasks
-    @tasks.each do |task|
-      @imported = Task.find_by_name(task.body[0..254])
-      @imported.should_not == nil
-      @imported.asset_id.should == nil
-      @imported.asset_type.should == nil
-      @imported.bucket.should == "due_#{task.frame}"
-      @imported.created_at.to_s(:db).should == task.created_at.to_s(:db)
+    exported, imported = Import.unrelated_tasks
+    exported.size.should == imported.size
+    exported.zip(imported).each do |ex, im|
+      im.name.should == ex.body[0..254]
+      im.asset_id.should == nil
+      im.asset_type.should == nil
+      im.bucket.should == "due_#{ex.frame}"
+      im.created_at.should == ex.created_at
     end
   end
 

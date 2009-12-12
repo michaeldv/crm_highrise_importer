@@ -15,7 +15,7 @@ module FatFreeCRM
           @@fat_free_crm_users ||= []
           if @@users.empty?
             @@users = FatFreeCRM::Highrise::User.find(:all)
-            @@users.each { |u| @@fat_free_crm_users << import_user(u) }
+            @@users.each { |u| import_user(u) }
           end
           @@users
         end
@@ -38,25 +38,42 @@ module FatFreeCRM
         #------------------------------------------------------------------------------
         def people
           people = Person.find(:all)
-          people.select { |person| not is_user?(person) }.each do |p|
-            contact = import_person(p)
-            import_related_tasks(p, contact)
+          people = people.select { |person| not is_user?(person) } # Select people who are not users.
+          contacts = people.inject([]) do |arr, p|
+            arr << import_person(p)
           end
+          [ people, contacts ]
         end
 
         #------------------------------------------------------------------------------
         def companies
           companies = Company.find(:all)
-          companies.each do |c|
-            account = import_company(c)
-            import_related_tasks(c, account)
+          accounts = companies.inject([]) do |arr, c|
+            arr << import_company(c)
           end
+          [ companies, accounts ]
+        end
+
+        # Import related tasks for Companies (Accounts) or People (Contacts).
+        #------------------------------------------------------------------------------
+        def related_tasks(exported, imported)
+          before, after = [], []
+          exported.zip(imported).each do |ex, im|
+            x, y = import_related_task(ex, im)
+            before << x
+            after  << y
+          end
+          [ before.flatten, after.flatten ]
         end
 
         #------------------------------------------------------------------------------
-        def tasks
-          tasks = FatFreeCRM::Highrise::Task.find(:all)
-          tasks.each { |t| import_task(t) unless t.subject_id }
+        def unrelated_tasks
+          before = FatFreeCRM::Highrise::Task.find(:all)
+          before = before.select { |t| t.subject_id.nil? } # Select non-related tasks only.
+          after = before.inject([]) do |arr, t|
+            arr << import_task(t)
+          end
+          [ before, after ]
         end
 
         private
@@ -77,7 +94,8 @@ module FatFreeCRM
               :phone      => extract(person.contact_data, :work_phone),
               :mobile     => extract(person.contact_data, :mobile_phone),
               :created_at => user.created_at
-              )
+            )
+            @@fat_free_crm_users << fat_free_crm_user
           end
           fat_free_crm_user
         end
@@ -154,10 +172,12 @@ module FatFreeCRM
 
         # Import tasks related to a model with polymorphic subject_id/subject_type set.
         #------------------------------------------------------------------------------
-        def import_related_tasks(model, related)
-          model.tasks.each do |t|
-            import_task(t, related)
+        def import_related_task(model, related)
+          tasks = model.tasks
+          imported_tasks = tasks.inject([]) do |arr, t|
+            arr << import_task(t, related)
           end
+          [ tasks, imported_tasks ]
         end
 
         private
