@@ -6,9 +6,14 @@ namespace :crm do
 
     desc "Import Highrise data"
     task :import => :environment do
-      FatFreeCRM::Highrise::Base.site = "" # Ask user.
+      FatFreeCRM::Highrise::Base.site = ENV['SITE'] # Ask user.
       puts "Importing Highrise data..."
-      FatFreeCRM::Highrise::Import.people([])
+
+      people, contacts = FatFreeCRM::Highrise::Import.people
+      FatFreeCRM::Highrise::Import.notes(people, contacts)
+      companies, accounts = FatFreeCRM::Highrise::Import.companies
+      FatFreeCRM::Highrise::Import.notes(companies, contacts)
+      # TODO: missing emails
     end
 
   end

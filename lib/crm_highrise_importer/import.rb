@@ -22,7 +22,7 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def fat_free_crm_users
-          @@fat_free_crm_users
+          @@fat_free_crm_users ||= ::User.all
         end
 
         #------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def admin
-          @@admin ||= ::User.first(:conditions => "admin = true")
+          @@admin ||= ::User.first(:conditions => {:admin => true})
         end
 
         #------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ module FatFreeCRM
         def import_user(user)
           fat_free_crm_user = ::User.find_by_username(user.name)
           unless fat_free_crm_user
-            person = Person.find(user.person_id)
+            person = Person.find(:conditions => {:email_address => user.email_address})
             email = extract(person.contact_data, :work_email) || extract(person.contact_data, :home_email) || "#{user.name}@example.com"
             fat_free_crm_user = ::User.create!(
               :username   => user.name,
@@ -117,9 +117,9 @@ module FatFreeCRM
           contact = Contact.create!(
             :user_id     => author(person),
             :assigned_to => owner(person),
-            :first_name  => person.first_name[0..63],
-            :last_name   => person.last_name[0..63],
-            :title       => person.title[0..63],
+            :first_name  => (person.first_name || 'HIGHRISE')[0..63],
+            :last_name   => (person.last_name || 'HIGHRISE')[0..63],
+            :title       => (person.title || '')[0..63],
             :access      => "Public",
             :email       => extract(person.contact_data, :work_email),
             :alt_email   => extract(person.contact_data, :home_email),
@@ -130,9 +130,14 @@ module FatFreeCRM
             :linkedin    => extract(person.contact_data, :linkedin),
             :facebook    => extract(person.contact_data, :facebook),
             :twitter     => extract(person.contact_data, :twitter),
-            :address     => extract(person.contact_data, :address),
             :created_at  => person.created_at
           )
+          if person.contact_data.addresses.present?
+            highrise_address = person.contact_data.addresses.first
+            contact.business_address = ::Address.new(:full_address => extract(person.contact_data, :address))
+            contact.save!
+          end
+          
           if person.company
             account = import_company(person.company)
             AccountContact.create!(:account => account, :contact => contact)
@@ -154,10 +159,14 @@ module FatFreeCRM
             :toll_free_phone  => extract(company.contact_data, :tall_free_phone),
             :phone            => extract(company.contact_data, :work_phone),
             :fax              => extract(company.contact_data, :fax_phone),
-            :billing_address  => extract(company.contact_data, :address),
-            :shipping_address => extract(company.contact_data, :address),
             :created_at       => company.created_at
           )
+          if company.contact_data.addresses.present?
+            highrise_address = company.contact_data.addresses.first
+            account.billing_address = ::Address.new(:full_address => extract(company.contact_data, :address))
+            account.shipping_address = ::Address.new(:full_address => extract(company.contact_data, :address))
+            account.save!
+          end
           # puts account.inspect
           account
         end
@@ -264,22 +273,16 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def is_user?(person)
-          users.detect { |u| u.person_id == person.id }
+          false # People are separate from users now
         end
 
         #------------------------------------------------------------------------------
         def author(model)
-          users.zip(fat_free_crm_users).each do |u, f|
-            return f.id if u.id == model.author_id
-          end
           admin.id
         end
 
         def owner(model)
-          users.zip(fat_free_crm_users).each do |u, f|
-            return f.id if u.id == model.owner_id
-          end
-          nil
+          admin.id
         end
       end
 
