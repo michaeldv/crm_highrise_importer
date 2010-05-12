@@ -13,7 +13,6 @@ namespace :crm do
       FatFreeCRM::Highrise::Import.notes(people, contacts)
       companies, accounts = FatFreeCRM::Highrise::Import.companies
       FatFreeCRM::Highrise::Import.notes(companies, contacts)
-      # TODO: missing emails
     end
 
   end

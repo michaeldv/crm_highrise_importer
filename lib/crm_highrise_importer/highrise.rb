@@ -9,21 +9,6 @@ module FatFreeCRM
       def save!
         true
       end
-    end
-
-    #------------------------------------------------------------------------------
-    class CoreObject < Base
-      def notes
-        Note.find(:all, :from => "/#{self.class.collection_name}/#{id}/notes.xml")
-      end
-
-      def emails
-        Email.find(:all, :from => "/#{self.class.collection_name}/#{id}/emails.xml")
-      end
-
-      def tasks
-        Task.find(:all, :from => "/#{self.class.collection_name}/#{id}/tasks.xml")
-      end
 
       def self.find_all_across_pages(options = {})
         records = []
@@ -47,6 +32,21 @@ module FatFreeCRM
 
     end
 
+    #------------------------------------------------------------------------------
+    class CoreObject < Base
+      def notes
+        Note.find(:all, :from => "/#{self.class.collection_name}/#{id}/notes.xml")
+      end
+
+      def emails
+        Email.find(:all, :from => "/#{self.class.collection_name}/#{id}/emails.xml")
+      end
+
+      def tasks
+        Task.find(:all, :from => "/#{self.class.collection_name}/#{id}/tasks.xml")
+      end
+    end
+
     # ~~~~~~~~~~~ Person
     # integer     :id
     # integer     :author_id
@@ -62,7 +62,6 @@ module FatFreeCRM
     # datetime    :created_at
     #------------------------------------------------------------------------------
     class Person < CoreObject
-
       def company
         Company.find(company_id) if company_id
       end

@@ -137,6 +137,8 @@ module FatFreeCRM
             contact.business_address = ::Address.new(:full_address => extract(person.contact_data, :address))
             contact.save!
           end
+
+          import_email(person, contact)
           
           if person.company
             account = import_company(person.company)
@@ -167,6 +169,7 @@ module FatFreeCRM
             account.shipping_address = ::Address.new(:full_address => extract(company.contact_data, :address))
             account.save!
           end
+          import_email(company, account)
           # puts account.inspect
           account
         end
@@ -218,6 +221,24 @@ module FatFreeCRM
             )
           end
           [ notes, imported_notes ]
+        end
+
+        def import_email(highrise_record, ffc_record)
+          imported_email = highrise_record.emails.inject([]) do |arr, email|
+            ::Email.after_create.clear # Disable activity logging.
+            arr << ::Email.create!(
+                                   :imap_message_id => 'highrise-' + email.id.to_s,
+                                   :user_id => author(email),
+                                   :mediator_id => ffc_record.id,
+                                   :mediator_type => ffc_record.class.to_s,
+                                   :sent_from => 'Highrise',
+                                   :sent_to => 'Highrise',
+                                   :subject => email.title,
+                                   :body => email.body,
+                                   :sent_at => email.created_at
+                                 )
+          end
+          imported_email
         end
 
         private
