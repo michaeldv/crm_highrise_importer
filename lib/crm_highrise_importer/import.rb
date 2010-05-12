@@ -14,7 +14,7 @@ module FatFreeCRM
           @@users ||= []
           @@fat_free_crm_users ||= []
           if @@users.empty?
-            @@users = FatFreeCRM::Highrise::User.find(:all)
+            @@users = FatFreeCRM::Highrise::User.find_all_across_pages
             @@users.each { |u| import_user(u) }
           end
           @@users
@@ -37,7 +37,7 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def people
-          people = Person.find(:all)
+          people = Person.find_all_across_pages
           people = people.select { |person| not is_user?(person) } # Select people who are not users.
           contacts = people.inject([]) do |arr, p|
             arr << import_person(p)
@@ -47,7 +47,7 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def companies
-          companies = Company.find(:all)
+          companies = Company.find_all_across_pages
           accounts = companies.inject([]) do |arr, c|
             arr << import_company(c)
           end
@@ -68,7 +68,7 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def standalone_tasks
-          before = FatFreeCRM::Highrise::Task.find(:all)
+          before = FatFreeCRM::Highrise::Task.find_all_across_pages
           before = before.select { |t| t.subject_id.nil? } # Select non-related tasks only.
           after = before.inject([]) do |arr, t|
             arr << import_task(t)
