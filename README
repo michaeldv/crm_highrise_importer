@@ -1,5 +1,10 @@
 Highrise Importer plugin for Fat Free CRM
 
-This plugin is under development and not ready for the actual use.
+Assumptions: one Highrise account which is mapped to Fat Free CRM admin account.
 
-Copyright (c) 2009 Michael Dvorkin, released under the GNU Affero General Public License
+  * Pull "dropbox" branch of Fat Free CRM, see http://github.com/michaeldv/fat_free_crm/network
+  * rake db:migrate
+  * ruby script/plugin install git@github.com:michaeldv/crm_highrise_importer.git
+  * rake crm:highrise:import SITE=[Your Highrise URL]
+
+Copyright (c) 2009-10 Michael Dvorkin, released under the GNU Affero General Public License
