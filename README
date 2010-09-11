@@ -7,4 +7,6 @@ Assumptions: one Highrise account which is mapped to Fat Free CRM admin account.
   * ruby script/plugin install git://github.com/michaeldv/crm_highrise_importer.git
   * rake crm:highrise:import SITE=[Your Highrise URL]
 
+Note: [Your Highrise URL] should be http://**yourapikey**:X@subdomain.highrisehq.com eg: `SITE=http://1d93c8294:X@sample.highrisehq.com/`
+
 Copyright (c) 2009-10 Michael Dvorkin, released under the GNU Affero General Public License
