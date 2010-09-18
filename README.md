@@ -2,17 +2,24 @@
 
 ## Assumptions: one Highrise account which is mapped to Fat Free CRM admin account.
 
-  * Pull "dropbox" branch of Fat Free CRM, see http://github.com/michaeldv/fat_free_crm/network
   * `rake db:migrate`
   * `ruby script/plugin install git://github.com/michaeldv/crm_highrise_importer.git`
   * `rake crm:highrise:import SITE=[Your Highrise URL]`
 
-*Note:* [Your Highrise URL] should be http://**yourapikey**:X@subdomain.highrisehq.com eg:
+#### [Your Highrise URL] should be:
+
+`http://**yourapitoken**:X@subdomain.highrisehq.com`
+
+WHERE:
+
+  * yourapitoken is your api token from Highrise (sign in, click `My Info`, click `API token`)
+  * X is just a dummy placeholder for password, which you don't need.  Find out more information about that: http://developer.37signals.com/highrise/
+  * subdomain is your highrise account subdomain
 
 `rake crm:highrise:import SITE=http://1d93c8294:X@sample.highrisehq.com/`
 
-#### What's the deal with the :X ?
+### Important note about SSL and redirect errors
 
-When using the authentication token, you don't need a separate password. But since Highrise uses HTTP Basic Authentication, and lots of implementations assume that you want to have a password, it's often easier just to pass in a dummy password, like X. (source: http://developer.37signals.com/highrise/)
+If you try this rake task and get an error: `Failed with 302 Found => https://sample.highrisehq.com/people.xml?n=0` your account is set to use SSL authentication and you need to specify https as the SITE parameter to the rake task
 
 Copyright (c) 2009-10 Michael Dvorkin, released under the GNU Affero General Public License
