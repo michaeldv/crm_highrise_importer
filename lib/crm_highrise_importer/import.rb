@@ -180,6 +180,7 @@ module FatFreeCRM
         # Import tasks related to a model with polymorphic subject_id/subject_type set.
         #------------------------------------------------------------------------------
         def import_task(task, related = nil)
+          ::Task.find_by_name(task.body[0..245]) ||
           ::Task.create!(
             :user_id      => author(task),
             :assigned_to  => owner(task),
