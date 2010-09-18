@@ -114,39 +114,42 @@ module FatFreeCRM
 
         #------------------------------------------------------------------------------
         def import_person(person)
-          contact = Contact.create!(
-            :user_id     => author(person),
-            :assigned_to => owner(person),
-            :first_name  => (person.first_name || 'HIGHRISE')[0..63],
-            :last_name   => (person.last_name || 'HIGHRISE')[0..63],
-            :title       => (person.title || '')[0..63],
-            :access      => "Public",
-            :email       => extract(person.contact_data, :work_email),
-            :alt_email   => extract(person.contact_data, :home_email),
-            :phone       => extract(person.contact_data, :work_phone),
-            :mobile      => extract(person.contact_data, :mobile_phone),
-            :fax         => extract(person.contact_data, :fax_phone),
-            :blog        => extract(person.contact_data, :blog),
-            :linkedin    => extract(person.contact_data, :linkedin),
-            :facebook    => extract(person.contact_data, :facebook),
-            :twitter     => extract(person.contact_data, :twitter),
-            :created_at  => person.created_at
-          )
-          if person.contact_data.addresses.present?
-            highrise_address = person.contact_data.addresses.first
-            contact.business_address = ::Address.new(:full_address => extract(person.contact_data, :address))
-            contact.save!
-          end
+          first_name = (person.first_name || 'HIGHRISE')[0..63]
+          last_name  = (person.last_name || 'HIGHRISE')[0..63]
+          fat_free_crm_contact = Contact.find(:first, :conditions => { :first_name => first_name, :last_name => last_name })
+          unless fat_free_crm_contact
+            contact = Contact.create!(
+              :user_id     => author(person),
+              :assigned_to => owner(person),
+              :first_name  => (person.first_name || 'HIGHRISE')[0..63],
+              :last_name   => (person.last_name || 'HIGHRISE')[0..63],
+              :title       => (person.title || '')[0..63],
+              :access      => "Public",
+              :email       => extract(person.contact_data, :work_email),
+              :alt_email   => extract(person.contact_data, :home_email),
+              :phone       => extract(person.contact_data, :work_phone),
+              :mobile      => extract(person.contact_data, :mobile_phone),
+              :fax         => extract(person.contact_data, :fax_phone),
+              :blog        => extract(person.contact_data, :blog),
+              :linkedin    => extract(person.contact_data, :linkedin),
+              :facebook    => extract(person.contact_data, :facebook),
+              :twitter     => extract(person.contact_data, :twitter),
+              :created_at  => person.created_at
+            )
+            if person.contact_data.addresses.present?
+              highrise_address = person.contact_data.addresses.first
+              contact.business_address = ::Address.new(:full_address => extract(person.contact_data, :address))
+              contact.save!
+            end
 
-          import_email(person, contact)
+            import_email(person, contact)
           
-          if person.company
-            account = import_company(person.company)
-            AccountContact.create!(:account => account, :contact => contact)
+            if person.company
+              account = import_company(person.company)
+              AccountContact.create!(:account => account, :contact => contact)
+            end
           end
-          # puts contact.inspect
-          # puts contact.account.inspect
-          contact
+          fat_free_crm_contact || contact
         end
 
         #------------------------------------------------------------------------------
